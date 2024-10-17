@@ -1,0 +1,63 @@
+pipeline {
+    agent any
+    tools {
+        jdk 'jdk17'
+        nodejs 'nodejs16'
+    }
+    environment {
+        SCANNER_HOME=tool 'sonar-scanner'
+    }
+    stages {
+        stage('git checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/epic-croswords/Swiggy-Clone-App-eks-argocd.git'
+            }
+        }
+        stage('sonarqube') {
+            steps {
+                withSonarQubeEnv('sonar') {
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Swiggy-CICD \
+                    -Dsonar.projectKey=Swiggy-CICD '''
+                    }
+            }
+        }
+        stage('quality gates') {
+            steps {
+                script{
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+                }
+        }
+    }
+    stage('dependancy') {
+            steps {
+                sh "npm install"
+        }
+    }
+    stage('OWASP') {
+            steps {
+              dependencyCheck additionalArguments: '--scan ./  --disableYarnAudit --disableNodeAudit', odcInstallation: 'DC'
+              dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+        }
+    }
+    stage('trivy fs scan') {
+            steps {
+                sh "trivy fs . > trivy-fs.txt"
+        }
+    }
+    stage('docker build & docker push') {
+            steps {
+                withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                sh ''' docker build swiggy-app .  \
+                docker tag swiggy-app manlineroot12/swiggy-app:latest \
+                docker push manlineroot12/swiggy-app:latest '''
+                }
+        }
+    }
+    stage('trivy image scan') {
+            steps {
+                sh "trivy image manlineroot12/swiggy-app:latest > trivy-img.txt"
+        }
+    }
+}
+}
+
