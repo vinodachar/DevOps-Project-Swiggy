@@ -1,7 +1,6 @@
 # 🚀 **DevOps Real-time Project: Swiggy Clone App Deployment**
 
 In this **real-time DevOps project**, I demonstrate how to **deploy a Swiggy Clone App** using various modern tools and services in the DevOps ecosystem.
-
 ## 🛠️ Tools & Services Used:
 
 1. **Terraform** ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=flat-square&logo=terraform&logoColor=white)
